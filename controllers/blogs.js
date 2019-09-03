@@ -2,7 +2,6 @@ const jwt = require('jsonwebtoken');
 const blogsRouter = require('express').Router();
 const Blog = require('../models/blog');
 const User = require('../models/user');
-const tokenUtils = require('../utils/token_utils');
 
 blogsRouter.get('/', (request, response, next) => {
   Blog.find({})
@@ -16,8 +15,6 @@ blogsRouter.get('/', (request, response, next) => {
 blogsRouter.post('/', async (request, response, next) => {
   const blog = new Blog(request.body);
 
-  const token = tokenUtils.getTokenFrom(request);
-
   if (blog.likes == undefined) {
     blog.likes = 0;
   }
@@ -27,8 +24,8 @@ blogsRouter.post('/', async (request, response, next) => {
   }
 
   try {
-    const decodedToken = jwt.verify(token, process.env.SECRET);
-    if (!token || !decodedToken.id) {
+    const decodedToken = jwt.verify(request.token, process.env.SECRET);
+    if (!request.token || !decodedToken.id) {
       return response.status(401).json({ error: 'token missing or invalid' });
     }
 
@@ -47,6 +44,23 @@ blogsRouter.post('/', async (request, response, next) => {
 
 blogsRouter.delete('/:id', async (request, response, next) => {
   try {
+    const decodedToken = jwt.verify(request.token, process.env.SECRET);
+    if (!request.token || !decodedToken.id) {
+      return response.status(401).json({ error: 'token missing or invalid' });
+    }
+
+    const blog = await Blog.findById(request.params.id);
+
+    if (blog == null) {
+      return response.status(404).json({ error: 'blog was not found' });
+    }
+
+    if (decodedToken.id !== blog.user.toString()) {
+      return response
+        .status(401)
+        .json({ error: 'you do not have permissions to delete this blog' });
+    }
+
     await Blog.findByIdAndRemove(request.params.id);
     response.status(204).end();
   } catch (exception) {

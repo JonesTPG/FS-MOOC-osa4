@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 
 const config = require('./utils/config');
 const errorHandler = require('./middlewares/errorhandler');
+const tokenExtractor = require('./middlewares/tokenextractor');
 
 const blogsRouter = require('./controllers/blogs');
 const usersRouter = require('./controllers/users');
@@ -16,6 +17,8 @@ mongoose.connect(mongoUrl, { useNewUrlParser: true, useFindAndModify: false });
 
 app.use(cors());
 app.use(bodyParser.json());
+
+app.use(tokenExtractor.extractor);
 
 app.use('/api/blogs', blogsRouter);
 app.use('/api/users', usersRouter);
