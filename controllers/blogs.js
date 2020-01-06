@@ -36,6 +36,9 @@ blogsRouter.post('/', async (request, response, next) => {
     user.blogs = user.blogs.concat(savedBlog._id);
     await user.save();
 
+    // add the full user object to the return value (front-end needs it)
+    savedBlog.user = user;
+
     response.status(201).json(savedBlog.toJSON());
   } catch (e) {
     next(e);
@@ -82,6 +85,18 @@ blogsRouter.put('/:id', async (request, response, next) => {
       new: true
     });
     response.json(updatedBlog.toJSON());
+  } catch (e) {
+    next(e);
+  }
+});
+
+//add a like to a blog
+blogsRouter.post('/:id/likes', async (request, response, next) => {
+  try {
+    const blog = await Blog.findById(request.params.id);
+    blog.likes = blog.likes + 1;
+    await blog.save();
+    response.json(blog.toJSON());
   } catch (e) {
     next(e);
   }
